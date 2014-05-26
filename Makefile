@@ -40,46 +40,16 @@ UNAME := $(shell uname)
 
 CC=gcc
 
-#TODO: figure this out automatically
-IOS_VERSION=4.3
-IOS_SIM_SDK_LOC=SDKs/iPhoneSimulator$(IOS_VERSION).sdk/
-IOS_DEV_SDK_LOC=SDKs/iPhoneOS$(IOS_VERSION).sdk/
 
-#Place to put the various compiled libraries, we need to keep the sim and device libraries in separate directories
-IOS_DEV_DIR=ios_dev_libs/
-IOS_SIM_DIR=ios_sim_libs/
-
-#Need the various ios dev and sim directories
-IOS_PLAT_PREFIX=/Developer/Platforms/
-IOS_DEV_PLAT=$(IOS_PLAT_PREFIX)iPhoneOS.platform/Developer/
-IOS_SIM_PLAT=$(IOS_PLAT_PREFIX)iPhoneSimulator.platform/Developer/
-
-#The directories relative structure is the same(at least for the time being)
-IOS_CC_SUFFIX=usr/bin/gcc
-IOS_LIBTOOL_SUFFIX=usr/bin/libtool
-
-IOS_SIM_ARCH=i386
-IOS_DEV_ARCH=armv6 armv7
-
-IOS_SIM_ARCH_FLAG=-arch $(IOS_SIM_ARCH)
-IOS_DEV_ARCH_FLAG=-arch armv6 -arch armv7
-
-IOS_DEV_LIBTOOL_CMD=$(IOS_DEV_PLAT)$(IOS_LIBTOOL_SUFFIX)
-IOS_SIM_LIBTOOL_CMD=$(IOS_SIM_PLAT)$(IOS_LIBTOOL_SUFFIX)
-
-
-#Necessary for newer versions of llvm
-OS_X_VER=10.6
-OS_X_SDK_DIR=/Developer/SDKs/MacOSX$(OS_X_VER).sdk/
+.DEFAULT_GOAL := all
 
 CFLAGS=-c -Wall -I./include
-CFLAGS_APPLE=$(CFLAGS) -I $(OS_X_SDK_DIR)usr/include/
+CFLAGS_APPLE=$(CFLAGS)
 ARCH_FLAGS_OS_X=-arch i386 -arch x86_64
 
 STANDALONE_DIR=/usr/local/bin/
 
-IOS_LIB_NAME=rabin_polynomial.o
-LDFLAGS_APPLE=$(LDFLAGS) -framework Foundation
+LDFLAGS_APPLE=$(LDFLAGS) 
 
 STANDALONE_FILE_LIST=rabin_polynomial.c rabin_polynomial_main.c
 STANDALONE_EXECUTABLE_NAME=rabin_fingerprint
@@ -105,46 +75,27 @@ librabinpoly.lai: $(librabinpoly_OBJS)
 install/$(LIBS): $(LIBS)
 	libtool --mode=install \
 	install -c $(notdir $@) $(libdir)/$(notdir $@)
-install: $(addprefix install/,$(LIBS))
-	libtool --mode=finish $(libdir)
 
-install_standalone: 
-	sudo cp $(STANDALONE_EXECUTABLE_NAME) $(STANDALONE_DIR)
-	sudo chown root:wheel $(STANDALONE_DIR)$(STANDALONE_EXECUTABLE_NAME)
-	sudo chmod 755 $(STANDALONE_DIR)$(STANDALONE_EXECUTABLE_NAME)
-	
 
-standalone:
+all:
 ifeq ($(UNAME),Darwin)
 	$(CC) $(CFLAGS_APPLE) $(ARCH_FLAGS_OS_X) $(STANDALONE_FILE_LIST)
-	$(CC) $(LDFLAGS_APPLE) $(ARCH_FLAGS_OS_X) -isysroot $(OS_X_SDK_DIR) *.o -o $(STANDALONE_EXECUTABLE_NAME)
+	$(CC) $(LDFLAGS_APPLE) $(ARCH_FLAGS_OS_X) *.o -o $(STANDALONE_EXECUTABLE_NAME)
 else
 	$(CC) $(CFLAGS) $(STANDALONE_FILE_LIST)
 	$(CC) $(LDFLAGS) *.o -o $(STANDALONE_EXECUTABLE_NAME)
 endif
 
-
-iossim: 
-	mkdir -p $(IOS_SIM_DIR)
-	$(IOS_SIM_PLAT)$(IOS_CC_SUFFIX) $(CFLAGS_APPLE) $(IOS_SIM_ARCH_FLAG) -isysroot  $(IOS_SIM_PLAT)$(IOS_SIM_SDK_LOC) rabin_polynomial.c
-	$(IOS_SIM_LIBTOOL_CMD) -arch_only $(IOS_SIM_ARCH) $(LDFLAGS_APPLE) -L $(IOS_LIB_NAME) -o $(IOS_SIM_DIR)libRabinPoly.a
-
-iosdev: 
-	mkdir -p $(IOS_DEV_DIR)	
-	$(IOS_DEV_PLAT)$(IOS_CC_SUFFIX) $(CFLAGS_APPLE) $(IOS_DEV_ARCH_FLAG) -isysroot  $(IOS_DEV_PLAT)$(IOS_DEV_SDK_LOC) rabin_polynomial.c
-	for architecture in $(IOS_DEV_ARCH) ; do \
-	 $(IOS_DEV_LIBTOOL_CMD) -arch_only $$architecture $(LDFLAGS_APPLE) -L $(IOS_LIB_NAME) -o $(IOS_DEV_DIR)libRabinPoly_$$architecture.a ; \
-	done
-#Now join the archs together in a single library.
-	$(IOS_DEV_LIBTOOL_CMD) -static $(foreach architecture,$(IOS_DEV_ARCH),$(IOS_DEV_DIR)libRabinPoly_$(architecture).a) -o $(IOS_DEV_DIR)libRabinPoly.a
-
+install: 
+	sudo cp $(STANDALONE_EXECUTABLE_NAME) $(STANDALONE_DIR)
+	sudo chown root:wheel $(STANDALONE_DIR)$(STANDALONE_EXECUTABLE_NAME)
+	sudo chmod 755 $(STANDALONE_DIR)$(STANDALONE_EXECUTABLE_NAME)
+	
 clean:
 	rm -f *.o
 	rm -f *.a
 	rm -f *.lo
 	rm -f *.lai
 	rm -rf .libs
-	rm -rf $(IOS_SIM_DIR)
-	rm -rf $(IOS_DEV_DIR)
 	rm -f $(STANDALONE_EXECUTABLE_NAME)
 

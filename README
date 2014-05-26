@@ -1,13 +1,7 @@
 
 INSTALLATION NOTES:
 
-Note the default make/make install will install the application as a Linux shared object.  If you want to install the standalone program you will need to do:
-make standalone
-make install_standalone
+make all
+make install
 
-You can also make the library for iOS(iPhone) by running the following:
-make iosdev
-make iossim
-
-which will make the library for ios devices and the simulator respectively.
-
+(need to work on getting a configure file created)
